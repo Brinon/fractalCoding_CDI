@@ -61,8 +61,8 @@ def flip_horizontal(mat):
 
 def similarity(m1, m2):
     sim = 0
-    for i in range(m1):
-        for j in range(m2):
+    for i in range(len(m1)):
+        for j in range(len(m1[0])):
             sim += abs(m1[i][j] - m2[i][j])
     return sim/(len(m1)*len(m1[0]))
 
