@@ -25,12 +25,6 @@ def reconstruct_img(blocks):
             res.append(r)
     return np.vstack(res)
 
-
-
-# rotació 90 graus X times sentit horari
-def rotate(mat, times):
-    return np.rot90(mat,-times)
-
 # augmentar/disminuir la brillantor segons un factor
 def brightness(mat, fact):
     img = np.zeros((len(mat), len(mat[0])))

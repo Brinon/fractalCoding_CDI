@@ -2,10 +2,10 @@ from PIL import Image
 import numpy as np
 import os,sys
 import math
+from transforms import *
+image_path = '../samples/lena.bmp'
 
-image_path = '../samples/lena.jpg'
-
-def decomp_domain_blocks(image, block_size):
+def decomp_blocks(image, block_size):
     '''
     :param image: PIL Image
     divide the image into blocks height x width 
@@ -44,7 +44,7 @@ def get_range_block(image, p, w=8, h=8):
         b += [fila]
     return b
 
-# rotació 90 graus X times sentit horari
+
 def rotate(mat, times):
     return np.rot90(mat,-times)
 
@@ -99,5 +99,45 @@ def main():
     # asImage(reduce_domain(np.asarray(im))).show()
     # print(b1)
 
+
+
+def check_transforms(rangeb, domainb, threshold):
+    domaninb = reduce_matrix(domainb) 
+    if similarity(rangeb, rotate90(domainb)) <= threshold:
+        return 'r90'
+    elif similarity(rangeb, rotate180(domainb)) <= threshold:
+        return 'r180'
+    elif similarity(rangeb, rotate270(domainb)) <= threshold:
+        return 'r270'
+    elif similarity(rangeb, flip_vertical(domainb)) <= threshold:
+        return 'fvr'
+    elif similarity(rangeb, flip_horizontal(domainb)) <= threshold:
+        return 'fhr'
+    return -1
+
+def main2():
+    im = Image.open(image_path)
+
+    domain_blocks = decomp_blocks(im, 16)
+    range_blocks = decomp_blocks(im, 8)
+    range_mapping = {}
+    #for each range
+    for i in range(len(range_blocks)):
+        for j in range(len(range_blocks[0])):
+            range_act = range_blocks[i][j]
+            ### buscar un domain block
+            block_found = False
+
+            for d_i in range(len(domain_blocks)):
+                for d_j in range(len(domain_blocks[0])):
+                    while not block_found:
+                        domain_act = domain_blocks[d_i][d_j]
+                        res = check_transforms(range_act, domain_act, 0.1)
+                        if res != -1:
+                            range_mapping[(i,j)] = res
+                            print ('block {},{} transformed: ({},{},{})'.format(i,j,d_i,d_j, res))
+                            block_found = True
+    print (range_mapping)
+                    
 if __name__ == '__main__':
-    main()
+    main2()
