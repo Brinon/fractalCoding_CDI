@@ -25,6 +25,44 @@ def reconstruct_img(blocks):
             res.append(r)
     return np.vstack(res)
 
-def main():
-    pass
+
+
+# rotació 90 graus X times sentit horari
+def rotate(mat, times):
+    return np.rot90(mat,-times)
+
+# augmentar/disminuir la brillantor segons un factor
+def brightness(mat, fact):
+    img = np.zeros((len(mat), len(mat[0])))
+    # img = [[0]*len(mat[0]) for _ in range(len(mat))]
+    for i in range(len(mat)):
+        for j in range(len(mat[0])):
+            val = mat[i][j]*fact
+            if (val > 255):
+                img[i][j] = 255.0
+            else:
+                img[i][j] = val
+    return np.asarray(img)
+
+def rotate90(mat):
+    return np.rot90(mat,-1)
+
+def rotate180(mat):
+    return np.rot90(mat,2)
+
+def rotate270(mat):
+    return np.rot90(mat,1)
+
+def flip_vertical(mat):
+    return np.flipup(mat)
+
+def flip_horizontal(mat):
+    return np.fliplr(mat)
+
+def similarity(m1, m2):
+    sim = 0
+    for i in range(m1):
+        for j in range(m2):
+            sim += abs(m1[i][j] - m2[i][j])
+    return sim/(len(m1)*len(m1[0]))
 
