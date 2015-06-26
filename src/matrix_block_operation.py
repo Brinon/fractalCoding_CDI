@@ -102,7 +102,7 @@ def main():
 
 
 def check_transforms(rangeb, domainb, threshold):
-    domaninb = reduce_matrix(domainb) 
+   
     if similarity(rangeb, rotate90(domainb)) <= threshold:
         return 'r90'
     elif similarity(rangeb, rotate180(domainb)) <= threshold:
@@ -115,14 +115,32 @@ def check_transforms(rangeb, domainb, threshold):
         return 'fhr'
     return -1
 
+def undo_trans(block, trans):
+    if trans == 'r90':
+        return rotate90(block)
+    elif trans == 'r180':
+        return rotate180(block)
+    elif trans == 'r270':
+        return rotate270(block)
+    elif trans == 'fvr':
+        return flip_vertical(block)
+    elif trans == 'fhr':   
+        return flip_horizontal(block)
+  
+ 
 def main2():
     im = Image.open(image_path)
 
     domain_blocks = decomp_blocks(im, 16)
     range_blocks = decomp_blocks(im, 8)
+    print(len(range_blocks), len(range_blocks[0]), len(range_blocks[0][0]), len(range_blocks[0][0][0]))
+    im = asImage(reconstruct_img(range_blocks))
+    im.show()
     range_mapping = {}
+    result_img = np.array([]) 
     #for each range
     for i in range(len(range_blocks)):
+        fil = np.array([])
         for j in range(len(range_blocks[0])):
             range_act = range_blocks[i][j]
             ### buscar un domain block
@@ -131,13 +149,19 @@ def main2():
             for d_i in range(len(domain_blocks)):
                 for d_j in range(len(domain_blocks[0])):
                     while not block_found:
-                        domain_act = domain_blocks[d_i][d_j]
+                        domain_act = reduce_matrix(domain_blocks[d_i][d_j])
                         res = check_transforms(range_act, domain_act, 0.1)
                         if res != -1:
                             range_mapping[(i,j)] = res
-                            print ('block {},{} transformed: ({},{},{})'.format(i,j,d_i,d_j, res))
+                 #           print ('block {},{} transformed: ({},{},{})'.format(i,j,d_i,d_j, res))
+                            fil=np.append(fil, undo_trans(domain_act, res))
                             block_found = True
-    print (range_mapping)
-                    
+        result_img = np.append(result_img, fil)
+    result_img = result_img.reshape((64,64,8,8))
+    print (result_img)
+    print(type(result_img), result_img.shape)
+    res_img = asImage(reconstruct_img(result_img))
+    res_img.show()
+    
 if __name__ == '__main__':
     main2()
