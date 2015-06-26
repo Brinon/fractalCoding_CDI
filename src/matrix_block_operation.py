@@ -3,7 +3,10 @@ import numpy as np
 import os,sys
 import math
 from transforms import *
+
 image_path = '../samples/lena.bmp'
+
+
 
 def decomp_blocks(image, block_size):
     '''
@@ -27,10 +30,10 @@ def decomp_blocks(image, block_size):
                 block_ij += [fila_i]
             domain_row += [block_ij]
         domain_blocks += [domain_row]
-    return domain_blocks
+    return domain_blocks.reshape((64,64))
 
 
-def get_range_block(image, p, w=8, h=8):
+def get_domain_block(image, p, w=16, h=16):
     '''
     :param p: tuple x,y 
     return the block with left top corner at p of dimensions WxH '''
@@ -44,35 +47,21 @@ def get_range_block(image, p, w=8, h=8):
         b += [fila]
     return b
 
+def get_domain_blocks(image,w=16,h=16):
+    im_arr = np.array(image)
+    dom_blocks = np.array([])
+    # for i in range(len(im_arr)-h):
+    #     for j in range(len(im_arr[0])-w):
+    for i in range(0,len(im_arr),h):
+        for j in range(0,len(im_arr[0]),w):
+            dom_blocks = np.append(dom_blocks,get_domain_block(image,(i,j),w,h))
+    return dom_blocks
 
-def rotate(mat, times):
-    return np.rot90(mat,-times)
 
-# augmentar/disminuir la brillantor segons un factor
-def brightness(mat, fact):
-    img = np.zeros((len(mat), len(mat[0])))
-    # img = [[0]*len(mat[0]) for _ in range(len(mat))]
-    for i in range(len(mat)):
-        for j in range(len(mat[0])):
-            val = mat[i][j]*fact
-            if (val > 255):
-                img[i][j] = 255.0
-            else:
-                img[i][j] = val
-    return np.asarray(img)
 
 # passa a imatge
 def asImage(mat):
     return Image.fromarray(mat)
-
-def similarity(mat1, mat2):
-    count = 0
-    # mats tenen mateixa mida
-    for i in range(len(mat1)):
-        for j in range(len(mat1[0])):
-            if mat1[i][j] == mat2[i][j]:
-                count += 1
-    return count/(len(mat1)*len(mat1[0]))
 
 # redueix a la meitat una imatge fent la mitjana de color de cada 2 pixels (la mida ha de ser parell)
 def reduce_matrix(mat, n=2):
@@ -82,20 +71,43 @@ def reduce_matrix(mat, n=2):
             new_mat[i][j] = round((mat[2*i][2*j]+mat[2*i+1][2*j+1])/n)
     return np.asarray(new_mat)
 
+def transform(mat):
+    return np.asarray([brightness(mat, 0.1),brightness(mat, -0.1)])
+
 def main():
     im = Image.open(image_path)
     # print (im.size)
-    b = decomp_domain_blocks(im,16)
+    b1 = get_domain_blocks(im)
     # print(b)
     # print(len(b), len(b[0]))
     # print(np.asarray(im)[0][0:8], np.asarray(im)[1][0:8])
     # print(b[0][0])
-    rb = np.zeros((len(b),len(b[0]),len(b[0][0])//2,len(b[0][0][0])//2))
-    b1 = get_range_block(im, (0,0), 2,4)
+    b = get_range_blocks(im)
+    red_dom = np.zeros((len(b),len(b[0]),len(b[0][0])//2,len(b[0][0][0])//2))
     for i in range(len(b)):
         for j in range(len(b[0])):
-            rb[i][j] = reduce_matrix(np.asarray(b[i][j],dtype='float32'))
+            red_dom[i][j] = reduce_matrix(np.asarray(b[i][j],dtype='float32'))
 
+    pos = []
+    trans = []
+    final = np.array([])
+    for k1 in range(len(b1)):
+        for k2 in range(len(b1[0]))
+            lvl = 0
+            print(k)
+            for i in range(len(red_dom)):
+                for j in range(len(red_dom[0])):
+                    transforms = transform(red_dom[i][j])
+                    for t in range(len(transforms)):
+                        lvl2 = similarity(b1[k],t)
+                        if lvl2 < lvl:
+                            lvl = lvl2
+                            pos[k] = i,j
+                            trans[k] = t
+                            final = np.append(k,transforms[t])
+    print("Pos:",pos)
+    print("Trans:",trans)
+    asImage(np.asarray(reconstruct_img(final.reshape((32,32))))).show()
     # asImage(reduce_domain(np.asarray(im))).show()
     # print(b1)
 
