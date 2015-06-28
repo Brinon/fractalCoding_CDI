@@ -4,7 +4,7 @@ import os,sys
 import math
 import pickle
 from transforms import *
-
+from optparse import OptionParser
 def decomp_blocks(image, block_size):
     '''
     :param image: PIL Image
@@ -154,14 +154,17 @@ def decode(blocks, transforms):
     return reconstruct_img(decoded_img.reshape((64,64,8,8)))
     # reconstruct_img(decoded_img)
 
-def encode_img(image_path, result_path, n_its=1):
+def encode_image(image_path, result_path, n_its=1):
     im = Image.open(image_path)
     im = im.convert('L')
-    im_reconstruct = fractal(im, 35,False)
+    res_img, range_map = fractal(im, result_path, 35,False)
     f = open(result_path, 'wb')
-    pickle.dump(im_reconstruct,f, -1)
+    pickle.dump((res_img, range_map),f, -1)
     f.close()
-    print('decompressed image stored at: {}'.format(result_path))
+    print('original: {}, encoded: {}'.format(image_path, result_path))
+   
+    
+    
     #im_reconstruct.save(result_path)
 
 def show_pkl_image(path):
@@ -172,7 +175,7 @@ def show_pkl_image(path):
     im = im.convert("RGB")
     im.save('a.BMP')
 
-def fractal(im, threshold=35, overlaping=True):
+def fractal(im, result_file,  threshold=35, overlaping=True):
     if overlaping:
         domain_blocks = decomp_overlaping_blocks(im, 16)
     else:
@@ -215,12 +218,24 @@ def fractal(im, threshold=35, overlaping=True):
                 print("pinx")
         result_img = np.append(result_img, fil)
     result_img = result_img.reshape((64,64,8,8))
+    return (result_img, range_mapping)
+    #f = open(result_file, 'wb')
+    #pickle.dump((result_img, range_mapping), f, -1)
+    #f.close()
+
+def decode_image(filename, file_result):
+    f = open(filename, 'rb')
+    result_img, range_mapping = pickle.load(f)
+    f.close()
     dec = decode(result_img, range_mapping)
     # print(np.asarray(im))
     # print(range_mapping)
     # print(dec)
     # print(im.size)
     # print(dec.shape)
+    img_d = asImage(dec)
+    img_d = img_d.convert("RGB")
+    img_d.save(file_result)
     return asImage(dec)
     # res_img = reconstruct_img(result_img)
     # res_img = asImage(res_img)
@@ -230,11 +245,23 @@ def fractal(im, threshold=35, overlaping=True):
 def main():
     image_path = '../samples/lena.jpg'
     image_path = '../samples/chess.jpg' # funciona mu be amb aqsta XD
-    encode_img(image_path, '../samples/chess.pkl')
+    encode_image(image_path, '../samples/chess_compress.bmp')
 #    show_pkl_image('../samples/result_overlap.pkl')
 #    show_pkl_image('../samples/result.pkl')
     Image.open(image_path).show()
-    show_pkl_image('../samples/chess.pkl')
+#    show_pkl_image('../samples/chess.pkl')
 
 if __name__ == '__main__':
-    main()
+    parser = OptionParser()
+    parser.add_option('-e', '--encode', dest='encode', action='store_true')
+    parser.add_option('-d', '--decode', dest='decode', action='store_true')
+    (options, args) = parser.parse_args()
+    print(options,'\n', args)
+    if options.encode and options.decode:
+        print ('Select only one from encode/decode!')
+        exit()
+    if options.encode:
+        encode_image(args[0], args[1])
+    elif options.decode:
+        decode_image(args[0], args[1])
+    #main()
