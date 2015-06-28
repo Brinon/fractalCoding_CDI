@@ -50,3 +50,42 @@ def similarity(m1, m2):
         for j in range(len(m1[0])):
             sim += abs(m1[i][j] - m2[i][j])
     return sim/(len(m1)*len(m1[0]))
+
+
+
+def check_transforms(rangeb, domainb, threshold):
+    # print(similarity(rangeb, rotate90(domainb)))
+    if similarity(rangeb, rotate90(domainb)) <= threshold:
+        return 'r90'
+    elif similarity(rangeb, rotate180(domainb)) <= threshold:
+        return 'r180'
+    elif similarity(rangeb, rotate270(domainb)) <= threshold:
+        return 'r270'
+    elif similarity(rangeb, flip_vertical(domainb)) <= threshold:
+        return 'fvr'
+    elif similarity(rangeb, flip_horizontal(domainb)) <= threshold:
+        return 'fhr'
+    elif similarity(rangeb, brightness(domainb,0.15)) <= threshold:
+        return 'b15'
+    elif similarity(rangeb, brightness(domainb,0.2)) <= threshold:
+        return 'b20'
+    return -1
+
+def undo_trans(block, trans):
+    if trans == 'r90':
+        return rotate90(block)
+    elif trans == 'r180':
+        return rotate180(block)
+    elif trans == 'r270':
+        return rotate270(block)
+    elif trans == 'fvr':
+        return flip_vertical(block)
+    elif trans == 'fhr':
+        return flip_horizontal(block)
+    elif trans == 'b15':
+        return brightness(block,0.15)
+    elif trans == 'b20':
+        return brightness(block,0.2)
+    else:
+        return block
+

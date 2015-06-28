@@ -5,6 +5,7 @@ import math
 import pickle
 from transforms import *
 from optparse import OptionParser
+
 def decomp_blocks(image, block_size):
     '''
     :param image: PIL Image
@@ -86,46 +87,8 @@ def reduce_matrix(mat, n=2):
     for i in range(len(mat)//n):
         for j in range(len(mat[0])//n):
             new_mat[i][j] = round((mat[2*i][2*j]+mat[2*i+1][2*j+1])/n)
-            #new_mat[i][j] = ((mat[2*i][2*j]+mat[2*i+1][2*j+1])/n)
+
     return np.asarray(new_mat)
-
-
-
-def check_transforms(rangeb, domainb, threshold):
-    # print(similarity(rangeb, rotate90(domainb)))
-    if similarity(rangeb, rotate90(domainb)) <= threshold:
-        return 'r90'
-    elif similarity(rangeb, rotate180(domainb)) <= threshold:
-        return 'r180'
-    elif similarity(rangeb, rotate270(domainb)) <= threshold:
-        return 'r270'
-    elif similarity(rangeb, flip_vertical(domainb)) <= threshold:
-        return 'fvr'
-    elif similarity(rangeb, flip_horizontal(domainb)) <= threshold:
-        return 'fhr'
-    elif similarity(rangeb, brightness(domainb,0.15)) <= threshold:
-        return 'b15'
-    elif similarity(rangeb, brightness(domainb,0.2)) <= threshold:
-        return 'b20'
-    return -1
-
-def undo_trans(block, trans):
-    if trans == 'r90':
-        return rotate90(block)
-    elif trans == 'r180':
-        return rotate180(block)
-    elif trans == 'r270':
-        return rotate270(block)
-    elif trans == 'fvr':
-        return flip_vertical(block)
-    elif trans == 'fhr':
-        return flip_horizontal(block)
-    elif trans == 'b15':
-        return brightness(block,0.15)
-    elif trans == 'b20':
-        return brightness(block,0.2)
-    else:
-        return block
 
 def inverse(block, trans):
     if trans == 'r90':
@@ -158,7 +121,7 @@ def encode_image(image_path, result_path, n_its=1):
     im = Image.open(image_path)
     im = im.convert('L')
     tini = time.clock()
-    res_img, range_map = fractal(im, result_path, 35,False)
+    res_img, range_map = fractal(im, result_path, 30,False)
     tend = time.clock()
     print('Size of compressed image: {}'.format(
         sys.getsizeof(res_img)+ sys.getsizeof(range_map)))
@@ -167,10 +130,6 @@ def encode_image(image_path, result_path, n_its=1):
     pickle.dump((res_img, range_map),f, -1)
     f.close()
     print('original: {}, encoded: {}'.format(image_path, result_path))
-   
-    
-    
-    #im_reconstruct.save(result_path)
 
 def show_pkl_image(path):
     f = open(path, 'rb')
@@ -186,13 +145,6 @@ def fractal(im, result_file,  threshold=35, overlaping=True):
     else:
         domain_blocks = decomp_blocks(im, 16)
     range_blocks = decomp_blocks(im, 8)
-    # print((len(range_blocks), len(range_blocks[0]), len(range_blocks[0][0]), len(range_blocks[0][0][0])))
-    # im2 = reconstruct_img(range_blocks)
-    # asImage(im2).show()
-    # print(im2.shape)
-    # im2 = asImage(reconstruct_img(range_blocks))
-    # print(im2.size)
-    # im2.show()
     range_mapping = {}
     result_img = np.array([])
     #for each range
@@ -201,7 +153,7 @@ def fractal(im, result_file,  threshold=35, overlaping=True):
         print(i)
         for j in range(len(range_blocks[0])):
             range_act = range_blocks[i][j]
-            ### buscar un domain block
+            # buscar un domain block q sigui prou similar
             block_found = False
             d_i = 0
             while d_i < len(domain_blocks) and not block_found:
@@ -224,9 +176,6 @@ def fractal(im, result_file,  threshold=35, overlaping=True):
         result_img = np.append(result_img, fil)
     result_img = result_img.reshape((64,64,8,8))
     return (result_img, range_mapping)
-    #f = open(result_file, 'wb')
-    #pickle.dump((result_img, range_mapping), f, -1)
-    #f.close()
 
 def decode_image(filename, file_result):
     f = open(filename, 'rb')
@@ -234,30 +183,13 @@ def decode_image(filename, file_result):
     f.close()
     tini = time.clock()
     dec = decode(result_img, range_mapping)
-    # print(np.asarray(im))
-    # print(range_mapping)
-    # print(dec)
-    # print(im.size)
-    # print(dec.shape)
     img_d = asImage(dec)
     img_d = img_d.convert("RGB")
     tend = time.clock()
     print('time spend in decompression: {}s'.format(tend-tini))
     img_d.save(file_result)
     return asImage(dec)
-    # res_img = reconstruct_img(result_img)
-    # res_img = asImage(res_img)
-    # res_img.show()
 
-
-def main():
-    image_path = '../samples/lena.jpg'
-    image_path = '../samples/chess.jpg' # funciona mu be amb aqsta XD
-    encode_image(image_path, '../samples/chess_compress.bmp')
-#    show_pkl_image('../samples/result_overlap.pkl')
-#    show_pkl_image('../samples/result.pkl')
-    Image.open(image_path).show()
-#    show_pkl_image('../samples/chess.pkl')
 
 if __name__ == '__main__':
     usage = 'python3 fractal-py [-e|-d] FILE1 FILE2'
@@ -265,7 +197,7 @@ if __name__ == '__main__':
     parser.add_option('-e', '--encode', dest='encode',default=False, action='store_true', help='encode FILE1 into FILE2')
     parser.add_option('-d', '--decode', dest='decode',default=False, action='store_true', help='decode FILE1 into FILE2')
     (options, args) = parser.parse_args()
-    #print(options,'\n', args)
+    
     if options.encode and options.decode:
         print ('Select only one from encode/decode!')
         exit()
