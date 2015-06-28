@@ -1,6 +1,6 @@
 from PIL import Image
 import numpy as np
-import os,sys
+import time, os,sys
 import math
 import pickle
 from transforms import *
@@ -157,7 +157,12 @@ def decode(blocks, transforms):
 def encode_image(image_path, result_path, n_its=1):
     im = Image.open(image_path)
     im = im.convert('L')
+    tini = time.clock()
     res_img, range_map = fractal(im, result_path, 35,False)
+    tend = time.clock()
+    print('Size of compressed image: {}'.format(
+        sys.getsizeof(res_img)+ sys.getsizeof(range_map)))
+    print('time spend in compression: {}s'.format(tend-tini))
     f = open(result_path, 'wb')
     pickle.dump((res_img, range_map),f, -1)
     f.close()
@@ -227,6 +232,7 @@ def decode_image(filename, file_result):
     f = open(filename, 'rb')
     result_img, range_mapping = pickle.load(f)
     f.close()
+    tini = time.clock()
     dec = decode(result_img, range_mapping)
     # print(np.asarray(im))
     # print(range_mapping)
@@ -235,6 +241,8 @@ def decode_image(filename, file_result):
     # print(dec.shape)
     img_d = asImage(dec)
     img_d = img_d.convert("RGB")
+    tend = time.clock()
+    print('time spend in decompression: {}s'.format(tend-tini))
     img_d.save(file_result)
     return asImage(dec)
     # res_img = reconstruct_img(result_img)
@@ -252,16 +260,23 @@ def main():
 #    show_pkl_image('../samples/chess.pkl')
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    parser.add_option('-e', '--encode', dest='encode', action='store_true')
-    parser.add_option('-d', '--decode', dest='decode', action='store_true')
+    usage = 'python3 fractal-py [-e|-d] FILE1 FILE2'
+    parser = OptionParser(usage=usage, version='fractal.py 1.0')
+    parser.add_option('-e', '--encode', dest='encode',default=False, action='store_true', help='encode FILE1 into FILE2')
+    parser.add_option('-d', '--decode', dest='decode',default=False, action='store_true', help='decode FILE1 into FILE2')
     (options, args) = parser.parse_args()
-    print(options,'\n', args)
+    #print(options,'\n', args)
     if options.encode and options.decode:
         print ('Select only one from encode/decode!')
+        exit()
+    if (not options.encode) and (not options.decode):
+        print ('Select at least one from encode/decode')
+        exit()
+    if len(args) != 2:
+        print ('FILE1 and FILE2 required (see -h for more details)')
         exit()
     if options.encode:
         encode_image(args[0], args[1])
     elif options.decode:
         decode_image(args[0], args[1])
-    #main()
+    print('end') 
